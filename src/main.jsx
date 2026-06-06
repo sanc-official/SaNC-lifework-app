@@ -334,12 +334,12 @@ function App() {
       {showSettings && (
         <section className="settings-panel">
           <label>
-            スプレッドシート連携（GAS Web App URL）
+            同期サーバー URL（Cloudflare または GAS）
             <input
               type="url"
               value={gasUrl}
               onChange={(e) => setGasUrl(e.target.value)}
-              placeholder="https://script.google.com/macros/s/●●●/exec"
+              placeholder="https://●●●.workers.dev  /  …/exec"
             />
           </label>
           <div className="settings-actions">
@@ -360,7 +360,7 @@ function App() {
             </button>
           </div>
           <p className="settings-hint">
-            URLを設定するとスマホ・PCでデータが共有されます。設定方法は <code>gas/README.md</code> を参照。
+            URLを設定するとスマホ・PCでデータが共有されます。設定方法は <code>server/README.md</code>（Cloudflare）または <code>gas/README.md</code>（GAS）を参照。
           </p>
         </section>
       )}

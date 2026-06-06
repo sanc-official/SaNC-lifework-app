@@ -1,0 +1,10 @@
+name = "sanc-lifework-api"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# `npx wrangler d1 create sanc-lifework` を実行して出力された
+# database_id をここに貼り付ける。
+[[d1_databases]]
+binding = "DB"
+database_name = "sanc-lifework"
+database_id = "ここにdatabase_idを貼る"

@@ -49,13 +49,19 @@ Android:
 
 外出先でも使うなら、VercelやNetlifyにデプロイしてHTTPSのURLで使うのが前提です。
 
-## スマホ・PCでデータを共有する（スプレッドシート連携）
+## スマホ・PCでデータを共有する（同期サーバー）
 
 標準ではブラウザ内（localStorage）にのみ保存され、端末をまたいだ同期はされません。
-Google Apps Script + スプレッドシートと連携すると、スマホとPCで同じデータを共有できます。
+同期サーバーのURLをアプリ右上の ⚙️ に登録すると、スマホとPCで同じデータを共有できます。
+バックエンドは2種類用意してあり、どちらも無料です。
 
-設定手順は [`gas/README.md`](./gas/README.md) を参照してください。
-アプリ右上の ⚙️ から GAS の URL を登録すると有効になります。
+| 方式 | 特徴 | 手順 |
+|---|---|---|
+| **Cloudflare Workers + D1**（推奨） | 自分専用のAPI URL + SQLite。サーバー管理不要・スリープなし | [`server/README.md`](./server/README.md) |
+| **GAS + スプレッドシート** | Googleアカウントだけで完結。シートが管理画面になる | [`gas/README.md`](./gas/README.md) |
+
+どちらも API 契約（`GET`=全件 / `POST {entries:[...]}`=upsert）は同じなので、
+アプリ側は URL を差し替えるだけで切り替えられます。
 
 ## 次の拡張候補
 
@@ -111,5 +117,5 @@ Android:
 保存先は標準ではブラウザ内の `localStorage` です。そのため、GitHub Pagesに公開しても
 Macとスマホのデータはそのままでは同期されません。
 
-端末間で同期したい場合は [`gas/README.md`](./gas/README.md) の手順で
-GAS + Google Sheets 連携を有効にしてください。
+端末間で同期したい場合は [`server/README.md`](./server/README.md)（Cloudflare・推奨）
+または [`gas/README.md`](./gas/README.md)（GAS）の手順で同期サーバーを有効にしてください。
