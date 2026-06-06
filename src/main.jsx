@@ -113,8 +113,12 @@ function formatNumber(value, digits = 1) {
 
 function App() {
   const [entries, setEntries] = useState(loadEntries);
-  const [form, setForm] = useState(emptyEntry);
+  const [form, setForm] = useState(() => {
+    const loaded = loadEntries();
+    return loaded.find((e) => e.date === today()) ?? emptyEntry;
+  });
   const [selectedDate, setSelectedDate] = useState("");
+  const [toast, setToast] = useState(null);
 
   const sortedEntries = useMemo(
     () => [...entries].sort((a, b) => b.date.localeCompare(a.date)),
@@ -142,6 +146,11 @@ function App() {
   const aiPrompt = selectedEntry ? buildAiPrompt(selectedEntry, stats) : "";
 
   function updateField(field, value) {
+    if (field === "date") {
+      const existing = entries.find((e) => e.date === value);
+      setForm(existing ? { ...existing } : { ...emptyEntry, date: value });
+      return;
+    }
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -153,7 +162,11 @@ function App() {
     setEntries(nextEntries);
     saveEntries(nextEntries);
     setSelectedDate(nextEntry.date);
-    setForm({ ...emptyEntry, date: today() });
+    const todayDate = today();
+    const todayEntry = nextEntries.find((e) => e.date === todayDate);
+    setForm(todayEntry ? { ...todayEntry } : { ...emptyEntry, date: todayDate });
+    setToast("保存しました ✓");
+    setTimeout(() => setToast(null), 2500);
   }
 
   function editEntry(entry) {
@@ -174,6 +187,7 @@ function App() {
 
   return (
     <main className="app-shell">
+      {toast && <div className="toast">{toast}</div>}
       <header className="topbar">
         <div>
           <p className="eyebrow">SaNC Lifework</p>
@@ -200,6 +214,7 @@ function App() {
           </div>
 
           <form onSubmit={submitEntry}>
+            <p className="form-section">運動</p>
             <div className="field-row">
               <label>
                 日付
@@ -241,6 +256,7 @@ function App() {
               雨の日代替メニューを実施
             </label>
 
+            <p className="form-section">睡眠・体調</p>
             <div className="field-row">
               <label>
                 起床
@@ -256,18 +272,20 @@ function App() {
               </label>
             </div>
 
+            <label>
+              お酒
+              <select value={form.alcohol} onChange={(e) => updateField("alcohol", e.target.value)}>
+                <option>飲酒なし</option>
+                <option>平日半量</option>
+                <option>金土自由</option>
+                <option>飲み過ぎ</option>
+              </select>
+            </label>
+
+            <p className="form-section">学習</p>
             <div className="field-row">
               <label>
-                お酒
-                <select value={form.alcohol} onChange={(e) => updateField("alcohol", e.target.value)}>
-                  <option>飲酒なし</option>
-                  <option>平日半量</option>
-                  <option>金土自由</option>
-                  <option>飲み過ぎ</option>
-                </select>
-              </label>
-              <label>
-                勉強した言語/技術
+                言語・技術
                 <select value={form.studyTopic} onChange={(e) => updateField("studyTopic", e.target.value)}>
                   <option>React</option>
                   <option>JavaScript</option>
@@ -294,6 +312,7 @@ function App() {
               <textarea value={form.blocker} onChange={(e) => updateField("blocker", e.target.value)} rows="2" />
             </label>
 
+            <p className="form-section">メモ</p>
             <label>
               今日の一言
               <input value={form.oneLine} onChange={(e) => updateField("oneLine", e.target.value)} placeholder="雨でも朝の流れは守れた" />

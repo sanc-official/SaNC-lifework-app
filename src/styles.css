@@ -221,6 +221,41 @@ textarea:focus {
   color: #284139;
 }
 
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: #247ba0;
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 16px rgba(36, 123, 160, 0.35);
+  z-index: 200;
+  animation: toast-in-out 2.5s ease forwards;
+  white-space: nowrap;
+}
+
+@keyframes toast-in-out {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  12%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  78%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.form-section {
+  margin: 8px 0 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #dce8e0;
+  color: #5b6f64;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .chart-block + .chart-block {
   margin-top: 18px;
 }
@@ -333,11 +368,29 @@ textarea:focus {
   }
 
   .field-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .history-item {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  /* iOS auto-zoom prevention: inputs must be 16px+ */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+    padding: 13px 11px;
+  }
+
+  .primary-button,
+  .secondary-button {
+    padding: 14px;
+    font-size: 1rem;
+  }
+
+  .icon-actions button {
+    padding: 10px 14px;
   }
 }
