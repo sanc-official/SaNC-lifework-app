@@ -231,7 +231,7 @@ textarea:focus {
   font-size: 0.95rem;
 }
 
-svg {
+.chart-block svg {
   width: 100%;
   height: auto;
   display: block;
@@ -240,7 +240,7 @@ svg {
   background: #fbfdfb;
 }
 
-svg text {
+.chart-block svg text {
   fill: #607068;
   font-size: 12px;
 }
