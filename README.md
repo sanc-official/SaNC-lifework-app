@@ -49,10 +49,17 @@ Android:
 
 外出先でも使うなら、VercelやNetlifyにデプロイしてHTTPSのURLで使うのが前提です。
 
+## スマホ・PCでデータを共有する（スプレッドシート連携）
+
+標準ではブラウザ内（localStorage）にのみ保存され、端末をまたいだ同期はされません。
+Google Apps Script + スプレッドシートと連携すると、スマホとPCで同じデータを共有できます。
+
+設定手順は [`gas/README.md`](./gas/README.md) を参照してください。
+アプリ右上の ⚙️ から GAS の URL を登録すると有効になります。
+
 ## 次の拡張候補
 
-- Google Sheets連携
-- OpenAI API連携
+- OpenAI / Gemini API連携（振り返り文の自動生成）
 - 週次レビュー画面
 - CSV / JSONエクスポート
 - スマホ向け入力短縮モード
@@ -101,6 +108,8 @@ Android:
 
 ### 注意
 
-現時点の保存先はブラウザ内の `localStorage` です。
+保存先は標準ではブラウザ内の `localStorage` です。そのため、GitHub Pagesに公開しても
+Macとスマホのデータはそのままでは同期されません。
 
-そのため、GitHub Pagesに公開してもMacとスマホのデータは自動同期されません。同期したい場合は、次の段階でGAS Web API + Google Sheets保存を追加します。
+端末間で同期したい場合は [`gas/README.md`](./gas/README.md) の手順で
+GAS + Google Sheets 連携を有効にしてください。

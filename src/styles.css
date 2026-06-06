@@ -79,6 +79,92 @@ h1 {
   font-weight: 700;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sync-pill,
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #cfdbd3;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: #40524a;
+}
+
+.icon-button {
+  padding: 9px 10px;
+}
+
+.sync-pill:disabled {
+  cursor: default;
+}
+
+.sync-off {
+  color: #8a9890;
+}
+
+.sync-ok {
+  border-color: #aacdb9;
+  color: #2f7d54;
+}
+
+.sync-error {
+  border-color: #e3b3aa;
+  color: #a23a2a;
+}
+
+.sync-syncing {
+  color: #247ba0;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.settings-panel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #d8e0da;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(36, 49, 43, 0.05);
+}
+
+.settings-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.settings-hint {
+  margin: 0;
+  color: #64746d;
+  font-size: 0.82rem;
+}
+
+.settings-hint code {
+  background: #eef3f0;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
 .dashboard {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

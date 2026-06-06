@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Activity,
@@ -9,13 +9,16 @@ import {
   Dumbbell,
   Moon,
   Plus,
+  RefreshCw,
   Save,
+  Settings,
   Sparkles,
   Trash2,
 } from "lucide-react";
 import "./styles.css";
 
 const STORAGE_KEY = "sanc-lifework-log-v1";
+const GAS_URL_KEY = "sanc-lifework-gas-url-v1";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -100,6 +103,56 @@ function saveEntries(entries) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 }
 
+function loadGasUrl() {
+  try {
+    return localStorage.getItem(GAS_URL_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function saveGasUrl(url) {
+  localStorage.setItem(GAS_URL_KEY, url);
+}
+
+async function fetchRemoteEntries(url) {
+  const res = await fetch(url, { method: "GET" });
+  if (!res.ok) throw new Error(`GET ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : data.entries ?? [];
+}
+
+async function pushRemoteEntries(url, entries) {
+  if (!entries.length) return;
+  // text/plain にすると GAS が応答できない CORS プリフライトを回避できる
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ entries }),
+  });
+}
+
+// 同じ日付は updatedAt が新しい方を採用してローカルとリモートを統合する
+function mergeEntries(local, remote) {
+  const byDate = new Map();
+  for (const entry of [...remote, ...local]) {
+    if (!entry || !entry.date) continue;
+    const current = byDate.get(entry.date);
+    if (!current || (entry.updatedAt ?? "") >= (current.updatedAt ?? "")) {
+      byDate.set(entry.date, entry);
+    }
+  }
+  return [...byDate.values()];
+}
+
+function syncLabel(gasUrl, state) {
+  if (!gasUrl) return "未連携";
+  if (state === "syncing") return "同期中";
+  if (state === "ok") return "同期済み";
+  if (state === "error") return "同期エラー";
+  return "同期";
+}
+
 function numberValue(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -115,13 +168,46 @@ function App() {
   const [entries, setEntries] = useState(loadEntries);
   const [form, setForm] = useState(() => {
     const loaded = loadEntries();
-    return loaded.find((e) => e.date === today()) ?? emptyEntry;
+    return loaded.find((e) => e.date === today() && !e.deleted) ?? emptyEntry;
   });
   const [selectedDate, setSelectedDate] = useState("");
   const [toast, setToast] = useState(null);
+  const [gasUrl, setGasUrl] = useState(loadGasUrl);
+  const [syncState, setSyncState] = useState("idle"); // idle | syncing | ok | error
+  const [showSettings, setShowSettings] = useState(false);
+
+  const entriesRef = useRef(entries);
+  entriesRef.current = entries;
+
+  const syncNow = useCallback(async () => {
+    const url = loadGasUrl();
+    if (!url) return;
+    setSyncState("syncing");
+    try {
+      const remote = await fetchRemoteEntries(url);
+      const merged = mergeEntries(entriesRef.current, remote);
+      setEntries(merged);
+      saveEntries(merged);
+      // リモートに無い / ローカルの方が新しいものだけ送り返す
+      const remoteByDate = new Map(remote.map((e) => [e.date, e.updatedAt ?? ""]));
+      const toPush = merged.filter((e) => {
+        if (!e.updatedAt) return false;
+        const r = remoteByDate.get(e.date);
+        return r === undefined || e.updatedAt > r;
+      });
+      await pushRemoteEntries(url, toPush);
+      setSyncState("ok");
+    } catch {
+      setSyncState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loadGasUrl()) syncNow();
+  }, [syncNow]);
 
   const sortedEntries = useMemo(
-    () => [...entries].sort((a, b) => b.date.localeCompare(a.date)),
+    () => [...entries].filter((e) => !e.deleted).sort((a, b) => b.date.localeCompare(a.date)),
     [entries],
   );
 
@@ -147,7 +233,7 @@ function App() {
 
   function updateField(field, value) {
     if (field === "date") {
-      const existing = entries.find((e) => e.date === value);
+      const existing = entries.find((e) => e.date === value && !e.deleted);
       setForm(existing ? { ...existing } : { ...emptyEntry, date: value });
       return;
     }
@@ -156,17 +242,30 @@ function App() {
 
   function submitEntry(event) {
     event.preventDefault();
-    const nextEntry = { ...form, id: form.id ?? crypto.randomUUID() };
+    const nextEntry = {
+      ...form,
+      id: form.id ?? crypto.randomUUID(),
+      updatedAt: new Date().toISOString(),
+      deleted: false,
+    };
     const withoutSameDate = entries.filter((entry) => entry.date !== nextEntry.date);
     const nextEntries = [...withoutSameDate, nextEntry];
     setEntries(nextEntries);
     saveEntries(nextEntries);
     setSelectedDate(nextEntry.date);
     const todayDate = today();
-    const todayEntry = nextEntries.find((e) => e.date === todayDate);
+    const todayEntry = nextEntries.find((e) => e.date === todayDate && !e.deleted);
     setForm(todayEntry ? { ...todayEntry } : { ...emptyEntry, date: todayDate });
     setToast("保存しました ✓");
     setTimeout(() => setToast(null), 2500);
+
+    const url = loadGasUrl();
+    if (url) {
+      setSyncState("syncing");
+      pushRemoteEntries(url, [nextEntry])
+        .then(() => setSyncState("ok"))
+        .catch(() => setSyncState("error"));
+    }
   }
 
   function editEntry(entry) {
@@ -176,9 +275,22 @@ function App() {
   }
 
   function deleteEntry(id) {
-    const nextEntries = entries.filter((entry) => entry.id !== id);
+    const stamp = new Date().toISOString();
+    let deleted = null;
+    const nextEntries = entries.map((entry) => {
+      if (entry.id === id) {
+        deleted = { ...entry, deleted: true, updatedAt: stamp };
+        return deleted;
+      }
+      return entry;
+    });
     setEntries(nextEntries);
     saveEntries(nextEntries);
+
+    const url = loadGasUrl();
+    if (url && deleted) {
+      pushRemoteEntries(url, [deleted]).catch(() => setSyncState("error"));
+    }
   }
 
   async function copyPrompt() {
@@ -193,11 +305,65 @@ function App() {
           <p className="eyebrow">SaNC Lifework</p>
           <h1>Routine Log</h1>
         </div>
-        <div className="date-chip">
-          <CalendarDays size={18} />
-          {today()}
+        <div className="topbar-actions">
+          <button
+            type="button"
+            className={`sync-pill sync-${gasUrl ? syncState : "off"}`}
+            onClick={syncNow}
+            disabled={!gasUrl || syncState === "syncing"}
+            title={gasUrl ? "今すぐ同期" : "未連携（設定から連携）"}
+          >
+            <RefreshCw size={15} className={syncState === "syncing" ? "spin" : ""} />
+            {syncLabel(gasUrl, syncState)}
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => setShowSettings((s) => !s)}
+            title="同期設定"
+          >
+            <Settings size={16} />
+          </button>
+          <div className="date-chip">
+            <CalendarDays size={18} />
+            {today()}
+          </div>
         </div>
       </header>
+
+      {showSettings && (
+        <section className="settings-panel">
+          <label>
+            スプレッドシート連携（GAS Web App URL）
+            <input
+              type="url"
+              value={gasUrl}
+              onChange={(e) => setGasUrl(e.target.value)}
+              placeholder="https://script.google.com/macros/s/●●●/exec"
+            />
+          </label>
+          <div className="settings-actions">
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => {
+                saveGasUrl(gasUrl.trim());
+                setShowSettings(false);
+                syncNow();
+              }}
+            >
+              <Save size={16} />
+              保存して同期
+            </button>
+            <button type="button" className="secondary-button" onClick={() => setShowSettings(false)}>
+              閉じる
+            </button>
+          </div>
+          <p className="settings-hint">
+            URLを設定するとスマホ・PCでデータが共有されます。設定方法は <code>gas/README.md</code> を参照。
+          </p>
+        </section>
+      )}
 
       <section className="dashboard">
         <MetricCard icon={<Activity />} label="7日間 距離" value={`${formatNumber(stats.distance)} km`} />
