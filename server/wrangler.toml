@@ -7,4 +7,4 @@ compatibility_date = "2024-11-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "sanc-lifework"
-database_id = "ここにdatabase_idを貼る"
+database_id = "e205e6a7-9967-4040-ae37-5518dbf7aec1"
